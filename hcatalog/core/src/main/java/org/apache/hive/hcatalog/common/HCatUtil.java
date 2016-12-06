@@ -580,6 +580,7 @@ public class HCatUtil {
     if (imsc instanceof HiveMetaStoreClient){
       return (HiveMetaStoreClient)imsc;
     } else {
+    	LOG.info("-----tianlong-----call HiveMetaStoreClient Constructor");	
       return new HiveMetaStoreClient(hiveConf);
     }
   }

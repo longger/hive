@@ -193,11 +193,12 @@ public class HiveMetaStoreClient implements IMetaStoreClient {
   public HiveMetaStoreClient(HiveConf conf)
     throws MetaException {
     this(conf, null);
+    LOG.info("-----tianlong-----in HiveMetaStoreClient Constructor");
   }
 
   public HiveMetaStoreClient(HiveConf conf, HiveMetaHookLoader hookLoader)
     throws MetaException {
-
+	LOG.info("-----tianlong-----in HiveMetaStoreClient Constructor");
     this.hookLoader = hookLoader;
     if (conf == null) {
       conf = new HiveConf(HiveMetaStoreClient.class);

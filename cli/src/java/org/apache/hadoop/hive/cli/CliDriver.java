@@ -98,6 +98,8 @@ public class CliDriver {
   public static final int DELIMITED_CANDIDATE_THRESHOLD = 10;
 
   public static final String HIVERCFILE = ".hiverc";
+  
+  private static final Logger LOG = LoggerFactory.getLogger(CliDriver.class.getName());
 
   private final LogHelper console;
   protected ConsoleReader reader;

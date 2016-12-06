@@ -39,6 +39,13 @@
       <artifactId>hive-serde</artifactId>
       <version>${project.version}</version>
     </dependency>
+<!-- https://mvnrepository.com/artifact/com.alibaba/fastjson -->
+<dependency>
+    <groupId>com.alibaba</groupId>
+    <artifactId>fastjson</artifactId>
+    <version>1.1.39</version>
+</dependency>
+
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-shims</artifactId>

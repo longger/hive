@@ -325,6 +325,7 @@ public class HiveMetaStore extends ThriftHiveMetastore {
       super(name);
       hiveConf = conf;
       if (init) {
+    	LOG.info("-----tianlong-----in HMSHandler Constructor before init()");
         init();
       }
     }
@@ -350,7 +351,9 @@ public class HiveMetaStore extends ThriftHiveMetastore {
 
     @Override
     public void init() throws MetaException {
+      // tianlong
       rawStoreClassName = hiveConf.getVar(HiveConf.ConfVars.METASTORE_RAW_STORE_IMPL);
+      //rawStoreClassName = hiveConf.getVar(HiveConf.ConfVars.METASTORE_RAW_STORE_IMPL_NEW);
       initListeners = MetaStoreUtils.getMetaStoreListeners(
           MetaStoreInitListener.class, hiveConf,
           hiveConf.getVar(HiveConf.ConfVars.METASTORE_INIT_HOOKS));
@@ -367,6 +370,7 @@ public class HiveMetaStore extends ThriftHiveMetastore {
 
       synchronized (HMSHandler.class) {
         if (currentUrl == null || !currentUrl.equals(MetaStoreInit.getConnectionURL(hiveConf))) {
+          LOG.info("-----tianlong-----in init, before createDefaultDB and createDefaultRoles");
           createDefaultDB();
           createDefaultRoles();
           addAdminUsers();
@@ -477,6 +481,7 @@ public class HiveMetaStore extends ThriftHiveMetastore {
     @InterfaceAudience.LimitedPrivate({"HCATALOG"})
     @InterfaceStability.Evolving
     public RawStore getMS() throws MetaException {
+      LOG.info("-----tianlong-----in getMS()");
       RawStore ms = threadLocalMS.get();
       if (ms == null) {
         ms = newRawStore();
@@ -499,6 +504,7 @@ public class HiveMetaStore extends ThriftHiveMetastore {
     private RawStore newRawStore() throws MetaException {
       LOG.info(addPrefix("Opening raw store with implementation class:"
           + rawStoreClassName));
+      LOG.info("-----tianlong-----in newRawStore and rawStoreClassName == " + rawStoreClassName);
       Configuration conf = getConf();
 
       if (hiveConf.getBoolVar(ConfVars.METASTORE_FASTPATH)) {
@@ -574,8 +580,9 @@ public class HiveMetaStore extends ThriftHiveMetastore {
     }
 
     private void createDefaultRoles_core() throws MetaException {
-
+    
       RawStore ms = getMS();
+      LOG.info("-----tianlong-----RawStore ms = getMS()");
       try {
         ms.addRole(ADMIN, ADMIN);
       } catch (InvalidObjectException e) {

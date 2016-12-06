@@ -389,6 +389,14 @@ public class ObjectStore implements RawStore, Configurable {
         }
       }
     }
+    // tianlong
+    Iterator<Entry<Object, Object>> iterator = prop.entrySet().iterator();
+    while (iterator.hasNext()) {
+    	Entry<Object, Object> entry = iterator.next();
+    	Object key = entry.getKey();
+    	Object value = entry.getValue();
+    	LOG.info("-----tianlong-----key == " + key.toString() + " , value == " + value.toString());
+    }
     return prop;
   }
 
@@ -1009,6 +1017,7 @@ public class ObjectStore implements RawStore, Configurable {
 
   @Override
   public List<String> getTables(String dbName, String pattern) throws MetaException {
+    LOG.info("-----tianlong-----getTables");
     boolean commited = false;
     Query query = null;
     List<String> tbls = null;

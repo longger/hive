@@ -19,6 +19,9 @@
 package org.apache.hadoop.hive.conf;
 
 import com.google.common.base.Joiner;
+
+import redis.clients.jedis.HostAndPort;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -33,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -156,6 +160,7 @@ public class HiveConf extends Configuration {
       HiveConf.ConfVars.METASTORE_EVENT_EXPIRY_DURATION,
       HiveConf.ConfVars.METASTORE_FILTER_HOOK,
       HiveConf.ConfVars.METASTORE_RAW_STORE_IMPL,
+      HiveConf.ConfVars.METASTORE_RAW_STORE_IMPL_NEW,
       HiveConf.ConfVars.METASTORE_END_FUNCTION_LISTENERS,
       HiveConf.ConfVars.METASTORE_PART_INHERIT_TBL_PROPS,
       HiveConf.ConfVars.METASTORE_BATCH_RETRIEVE_OBJECTS_MAX,
@@ -199,7 +204,9 @@ public class HiveConf extends Configuration {
       HiveConf.ConfVars.METASTORE_HBASE_AGGR_STATS_CACHE_ENTRIES,
       HiveConf.ConfVars.METASTORE_HBASE_AGGR_STATS_MEMORY_TTL,
       HiveConf.ConfVars.METASTORE_HBASE_AGGR_STATS_INVALIDATOR_FREQUENCY,
-      HiveConf.ConfVars.METASTORE_HBASE_AGGR_STATS_HBASE_TTL
+      HiveConf.ConfVars.METASTORE_HBASE_AGGR_STATS_HBASE_TTL,
+      // tianlong
+      HiveConf.ConfVars.REDIS_ADDRESS
       };
 
   /**
@@ -649,6 +656,8 @@ public class HiveConf extends Configuration {
     METASTORE_RAW_STORE_IMPL("hive.metastore.rawstore.impl", "org.apache.hadoop.hive.metastore.ObjectStore",
         "Name of the class that implements org.apache.hadoop.hive.metastore.rawstore interface. \n" +
         "This class is used to store and retrieval of raw metadata objects such as table, database"),
+    METASTORE_RAW_STORE_IMPL_NEW("hive.metastore.rawstore.impl.new", "org.apache.hadoop.hive.metastore.NewObjectStore",
+    	"This class is used to store and retrieval of raw metadata objects such as table, database"),
     METASTORE_CONNECTION_DRIVER("javax.jdo.option.ConnectionDriverName", "org.apache.derby.jdbc.EmbeddedDriver",
         "Driver class name for a JDBC metastore"),
     METASTORE_MANAGER_FACTORY_CLASS("javax.jdo.PersistenceManagerFactoryClass",
@@ -2628,9 +2637,11 @@ public class HiveConf extends Configuration {
         "Comma separated list of configuration options which should not be read by normal user like passwords"),
     HIVE_CONF_INTERNAL_VARIABLE_LIST("hive.conf.internal.variable.list",
         "hive.added.files.path,hive.added.jars.path,hive.added.archives.path",
-        "Comma separated list of variables which are used internally and should not be configurable.");
-
-
+        "Comma separated list of variables which are used internally and should not be configurable."),
+    // tianlong
+   
+    REDIS_ADDRESS("hive.redis.address", null, "the address of Redis Cluster" );
+    
     public final String varname;
     private final String altName;
     private final String defaultExpr;
@@ -2857,6 +2868,48 @@ public class HiveConf extends Configuration {
    * entire contents of the same InputStream repeatedly without resetting it.
    * LoopingByteArrayInputStream has special logic to handle this.
    */
+  
+  // tianlong
+  public enum RedisMode {
+  	SENTINEL, STANDALONE,
+  };
+  
+  public RedisMode getRedisMode() {
+  	String addr = this.getVar(ConfVars.REDIS_ADDRESS);
+  	if (addr.startsWith("STL://")) {
+  		return RedisMode.SENTINEL;
+  	} else if (addr.startsWith("STA://")) {
+  		return RedisMode.STANDALONE;
+  	} else {
+  		return null;
+  	}
+  }
+  
+  public Set<String> getSentinel() {
+    HashSet<String> sen = new HashSet<String>();
+    String addr = this.getVar(ConfVars.REDIS_ADDRESS);
+    if (addr == null) {
+      return null;
+    }
+    for (String s : addr.substring(6).split(";")) {
+      sen.add(s);
+    }
+    return sen;
+  }
+
+  
+  public HostAndPort getRedisHP() {
+	  String addr = this.getVar(ConfVars.REDIS_ADDRESS);
+	  List<HostAndPort> lr = new ArrayList<>();
+	  for (String s : addr.substring(6).split(";")) {
+		  String[] hp = s.split(":");
+		  lr.add(new HostAndPort(hp[0], Integer.parseInt(hp[1])));
+	  }
+	  
+	  // 这里可以配置路由策略，现在是随机的返回的Redis Cluster中的一个地址。
+	  return lr.get(new Random().nextInt(lr.size()));
+  }
+  
   private static synchronized InputStream getConfVarInputStream() {
     if (confVarByteArray == null) {
       try {

@@ -56,11 +56,15 @@ import org.apache.hadoop.hive.metastore.api.UnknownTableException;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.hive.ql.stats.StatsUtils;
 import org.apache.thrift.TException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SessionHiveMetaStoreClient extends HiveMetaStoreClient implements IMetaStoreClient {
-
+	
+  private static final Logger LOG = LoggerFactory.getLogger(SessionHiveMetaStoreClient.class);
   SessionHiveMetaStoreClient(HiveConf conf) throws MetaException {
     super(conf);
+    LOG.info("-----tianlong-----SessionHiveMetaStoreClient Constructor");
   }
 
   SessionHiveMetaStoreClient(HiveConf conf, HiveMetaHookLoader hookLoader) throws MetaException {
