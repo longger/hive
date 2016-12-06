@@ -80,7 +80,7 @@ public class RetryingHMSHandler implements InvocationHandler {
 
   public static IHMSHandler getProxy(HiveConf hiveConf, IHMSHandler baseHandler, boolean local)
       throws MetaException {
-
+	LOG.info("-----tianlong-----");
     RetryingHMSHandler handler = new RetryingHMSHandler(hiveConf, baseHandler, local);
 
     return (IHMSHandler) Proxy.newProxyInstance(

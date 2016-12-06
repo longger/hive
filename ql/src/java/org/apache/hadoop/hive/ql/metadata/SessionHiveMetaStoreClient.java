@@ -69,6 +69,7 @@ public class SessionHiveMetaStoreClient extends HiveMetaStoreClient implements I
 
   SessionHiveMetaStoreClient(HiveConf conf, HiveMetaHookLoader hookLoader) throws MetaException {
     super(conf, hookLoader);
+    LOG.info("-----tianlong-----SessionHiveMetaStoreClient Constructor");
   }
 
   private Warehouse wh = null;

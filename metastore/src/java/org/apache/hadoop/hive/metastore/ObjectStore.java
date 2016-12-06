@@ -371,6 +371,7 @@ public class ObjectStore implements RawStore, Configurable {
         }
       }
     }
+    
     // Password may no longer be in the conf, use getPassword()
     try {
       String passwd =
@@ -1017,7 +1018,7 @@ public class ObjectStore implements RawStore, Configurable {
 
   @Override
   public List<String> getTables(String dbName, String pattern) throws MetaException {
-    LOG.info("-----tianlong-----getTables");
+	LOG.info("-----tianlong-----getTables");
     boolean commited = false;
     Query query = null;
     List<String> tbls = null;

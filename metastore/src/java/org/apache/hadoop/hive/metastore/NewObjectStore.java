@@ -2,6 +2,7 @@ package org.apache.hadoop.hive.metastore;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +16,7 @@ import javax.jdo.PersistenceManagerFactory;
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.metastore.api.AggrStats;
 import org.apache.hadoop.hive.metastore.api.ColumnStatistics;
 import org.apache.hadoop.hive.metastore.api.CurrentNotificationEventId;
@@ -53,6 +55,8 @@ import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.JSON;
 
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
 
 public class NewObjectStore implements RawStore, Configurable{
 	
@@ -63,16 +67,21 @@ public class NewObjectStore implements RawStore, Configurable{
 	public static boolean initialized = false;
 	private static Properties prop = null;
 	private static PersistenceManagerFactory pmf = null;
-	private Configuration hiveConf;
-	public Jedis jedis;
 	
+	private Configuration hiveConf;
+	public String redis_hostname;
+	public int redis_port;
 	private static Lock pmfPropLock = new ReentrantLock();
 	
 	// 检查配置参数
-	public static void initial() {
+	public void initial(Properties dsProps) {
 		if (initialized == false) {
 			LOG.info("-----tianlong-----initial newobjectstore the first time！");
-			// 初始化成功后，initialized设为true
+			String redis_address = HiveConf.getVar(getConf(), ConfVars.REDIS_ADDRESS);
+			String[] strs = redis_address.split(":");
+			this.redis_hostname = strs[0];
+			this.redis_port = Integer.parseInt(strs[1]);
+			prop = dsProps;
 			initialized = true;
 			LOG.info("-----tianlong-----initial success!");
 		}
@@ -83,6 +92,7 @@ public class NewObjectStore implements RawStore, Configurable{
 		// TODO Auto-generated method stub
 		pmfPropLock.lock();
 		initialized = false;
+		hiveConf = conf;
 		Properties propsFromConf = getDataSourceProps(conf);
 		boolean propsChanged = !propsFromConf.equals(prop);
 		
@@ -90,7 +100,7 @@ public class NewObjectStore implements RawStore, Configurable{
 			pmf = null;
 			prop = null;
 		}
-		
+		initial(propsFromConf);
 		pmfPropLock.unlock();
 	}
 	
@@ -163,13 +173,23 @@ public class NewObjectStore implements RawStore, Configurable{
 	@Override
 	public void createDatabase(Database db) throws InvalidObjectException, MetaException {
 		// TODO Auto-generated method stub
-		
+		String dbs = JSON.toJSONString(db);
+		//jedis.hset("table", "" + tbl.getDbName() + "." + tbl.getTableName(), tbls);
+		JedisPoolConfig config = new JedisPoolConfig();
+		JedisPool pool = new JedisPool(redis_hostname, redis_port);
+		pool.getResource().hset("db", "" + db.getName(), dbs);
+		LOG.info("-----tianlong-----create database " + db.getName() + " success!");
 	}
 
 	@Override
 	public Database getDatabase(String name) throws NoSuchObjectException {
 		// TODO Auto-generated method stub
-		return null;
+		JedisPoolConfig config = new JedisPoolConfig();
+		JedisPool pool = new JedisPool(redis_hostname, redis_port);
+		String dbs = pool.getResource().hget("db", name);
+		// 要把String的JSON转换为Database
+		Database db = JSON.parseObject(dbs, Database.class);
+		return db;
 	}
 
 	@Override
@@ -193,7 +213,14 @@ public class NewObjectStore implements RawStore, Configurable{
 	@Override
 	public List<String> getAllDatabases() throws MetaException {
 		// TODO Auto-generated method stub
-		return null;
+		JedisPoolConfig config = new JedisPoolConfig();
+		JedisPool pool = new JedisPool(redis_hostname, redis_port);
+		Map<String, String> maps = pool.getResource().hgetAll("db");
+		List<String> dbs = new ArrayList<>();
+		for (Entry<String, String> entry : maps.entrySet()) {
+			dbs.add(entry.getKey());
+		}
+		return dbs;
 	}
 
 	@Override
@@ -217,9 +244,10 @@ public class NewObjectStore implements RawStore, Configurable{
 	@Override
 	public void createTable(Table tbl) throws InvalidObjectException, MetaException {
 		// TODO Auto-generated method stub
-		jedis = new RedisFactory().getDefaultInstance();
 		String tbls = JSON.toJSONString(tbl);
-		jedis.hset("table", "" + tbl.getDbName() + "." + tbl.getTableName(), tbls);
+		JedisPoolConfig config = new JedisPoolConfig();
+		JedisPool pool = new JedisPool(redis_hostname, redis_port);
+		pool.getResource().hset("table", "" + tbl.getDbName() + "." + tbl.getTableName(), tbls);
 		LOG.info("-----tianlong-----create table " + tbl.getTableName() + " success!");
 	}
 
@@ -233,7 +261,11 @@ public class NewObjectStore implements RawStore, Configurable{
 	@Override
 	public Table getTable(String dbName, String tableName) throws MetaException {
 		// TODO Auto-generated method stub
-		return null;
+		JedisPoolConfig config = new JedisPoolConfig();
+		JedisPool pool = new JedisPool(redis_hostname, redis_port);
+		String tbls = pool.getResource().hget("table", dbName+"."+tableName);
+		Table table = JSON.parseObject(tbls, Table.class);
+		return table;
 	}
 
 	@Override
@@ -293,7 +325,14 @@ public class NewObjectStore implements RawStore, Configurable{
 	@Override
 	public List<String> getTables(String dbName, String pattern) throws MetaException {
 		// TODO Auto-generated method stub
-		return null;
+		JedisPoolConfig config = new JedisPoolConfig();
+		JedisPool pool = new JedisPool(this.redis_hostname, this.redis_port);
+		Map<String, String> maps = pool.getResource().hgetAll("table");
+		List<String> tables = new ArrayList<>();
+		for (Entry<String, String> entry : maps.entrySet()) {
+			tables.add(entry.getKey());
+		}
+		return tables;
 	}
 
 	@Override

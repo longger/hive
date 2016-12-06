@@ -352,8 +352,8 @@ public class HiveMetaStore extends ThriftHiveMetastore {
     @Override
     public void init() throws MetaException {
       // tianlong
-      rawStoreClassName = hiveConf.getVar(HiveConf.ConfVars.METASTORE_RAW_STORE_IMPL);
-      //rawStoreClassName = hiveConf.getVar(HiveConf.ConfVars.METASTORE_RAW_STORE_IMPL_NEW);
+      //rawStoreClassName = hiveConf.getVar(HiveConf.ConfVars.METASTORE_RAW_STORE_IMPL);
+      rawStoreClassName = hiveConf.getVar(HiveConf.ConfVars.METASTORE_RAW_STORE_IMPL_NEW);
       initListeners = MetaStoreUtils.getMetaStoreListeners(
           MetaStoreInitListener.class, hiveConf,
           hiveConf.getVar(HiveConf.ConfVars.METASTORE_INIT_HOOKS));
@@ -3463,6 +3463,7 @@ public class HiveMetaStore extends ThriftHiveMetastore {
       List<String> ret = null;
       Exception ex = null;
       try {
+    	LOG.info("-----tianlong-----before getMS()");
         ret = getMS().getAllTables(dbname);
       } catch (Exception e) {
         ex = e;
@@ -5765,6 +5766,7 @@ public class HiveMetaStore extends ThriftHiveMetastore {
 
   public static Iface newRetryingHMSHandler(String name, HiveConf conf, boolean local)
       throws MetaException {
+	LOG.info("-----tianlong-----before HMSHandler");
     HMSHandler baseHandler = new HiveMetaStore.HMSHandler(name, conf, false);
     return RetryingHMSHandler.getProxy(conf, baseHandler, local);
   }

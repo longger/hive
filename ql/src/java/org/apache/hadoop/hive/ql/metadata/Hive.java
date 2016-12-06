@@ -3048,7 +3048,7 @@ private void constructOneLBLocationMap(FileStatus fSta,
    *           if a working client can't be created
    */
   private IMetaStoreClient createMetaStoreClient() throws MetaException {
-
+	  LOG.info("-----tianlong-----start in createMetaStoreClient");
     HiveMetaHookLoader hookLoader = new HiveMetaHookLoader() {
         @Override
         public HiveMetaHook getHook(
@@ -3073,10 +3073,12 @@ private void constructOneLBLocationMap(FileStatus fSta,
           }
         }
       };
-
+    LOG.info("-----tianlong-----in createMetaStoreClient");
     if (conf.getBoolVar(ConfVars.METASTORE_FASTPATH)) {
+      LOG.info("-----tianlong-----conf.getBoolVar(ConfVars.METASTORE_FASTPATH) == true");
       return new SessionHiveMetaStoreClient(conf, hookLoader);
     } else {
+      LOG.info("-----tianlong-----conf.getBoolVar(ConfVars.METASTORE_FASTPATH) == false");
       return RetryingMetaStoreClient.getProxy(conf, hookLoader, metaCallTimeMap,
           SessionHiveMetaStoreClient.class.getName());
     }
@@ -3105,6 +3107,7 @@ private void constructOneLBLocationMap(FileStatus fSta,
         throw new MetaException(msg + "\n" + StringUtils.stringifyException(e));
       }
       try {
+    	LOG.info("-----tianlong-----before metaStoreClient = createMetaStoreClient()");
         metaStoreClient = createMetaStoreClient();
       } catch (RuntimeException ex) {
         Throwable t = ex.getCause();

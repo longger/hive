@@ -213,16 +213,20 @@ public class HiveMetaStoreClient implements IMetaStoreClient {
     if (localMetaStore) {
       // instantiate the metastore server handler directly instead of connecting
       // through the network
+      LOG.info("-----tianlong-----localMetaStore = true");
       if (conf.getBoolVar(ConfVars.METASTORE_FASTPATH)) {
+    	LOG.info("-----tianlong-----METASTORE_FASTPATH = true");
         client = new HiveMetaStore.HMSHandler("hive client", conf, true);
         fastpath = true;
       } else {
+    	LOG.info("-----tianlong-----METASTORE_FASTPATH = false");
         client = HiveMetaStore.newRetryingHMSHandler("hive client", conf, true);
       }
       isConnected = true;
       snapshotActiveConf();
       return;
     } else {
+    	LOG.info("-----tianlong-----localMetaStore = false");
       if (conf.getBoolVar(ConfVars.METASTORE_FASTPATH)) {
         throw new RuntimeException("You can't set hive.metastore.fastpath to true when you're " +
             "talking to the thrift metastore service.  You must run the metastore locally.");
@@ -1273,6 +1277,7 @@ public class HiveMetaStoreClient implements IMetaStoreClient {
   @Deprecated
   public Table getTable(String tableName) throws MetaException, TException,
       NoSuchObjectException {
+	LOG.info("-----tianlong-----");
     Table t = getTable(DEFAULT_DATABASE_NAME, tableName);
     return fastpath ? t : filterHook.filterTable(t);
   }
@@ -1309,6 +1314,7 @@ public class HiveMetaStoreClient implements IMetaStoreClient {
   @Override
   public List<String> getTables(String dbname, String tablePattern) throws MetaException {
     try {
+    	LOG.info("-----tianlong-----");
       return filterHook.filterTableNames(dbname, client.get_tables(dbname, tablePattern));
     } catch (Exception e) {
       MetaStoreUtils.logAndThrowMetaException(e);
@@ -1351,6 +1357,7 @@ public class HiveMetaStoreClient implements IMetaStoreClient {
   @Override
   public List<String> getAllTables(String dbname) throws MetaException {
     try {
+      LOG.info("-----tianlong-----");
       return filterHook.filterTableNames(dbname, client.get_all_tables(dbname));
     } catch (Exception e) {
       MetaStoreUtils.logAndThrowMetaException(e);
