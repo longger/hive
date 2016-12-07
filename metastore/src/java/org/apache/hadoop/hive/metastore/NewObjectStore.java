@@ -55,8 +55,8 @@ import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.JSON;
 
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
+import redis.clients.jedis.exceptions.JedisException;
+
 
 public class NewObjectStore implements RawStore, Configurable{
 	
@@ -72,7 +72,7 @@ public class NewObjectStore implements RawStore, Configurable{
 	public String redis_hostname;
 	public int redis_port;
 	private static Lock pmfPropLock = new ReentrantLock();
-	
+	private RedisUtil redisUtil = new RedisUtil();
 	// 检查配置参数
 	public void initial(Properties dsProps) {
 		if (initialized == false) {
@@ -173,22 +173,44 @@ public class NewObjectStore implements RawStore, Configurable{
 	@Override
 	public void createDatabase(Database db) throws InvalidObjectException, MetaException {
 		// TODO Auto-generated method stub
-		String dbs = JSON.toJSONString(db);
-		//jedis.hset("table", "" + tbl.getDbName() + "." + tbl.getTableName(), tbls);
-		JedisPoolConfig config = new JedisPoolConfig();
-		JedisPool pool = new JedisPool(redis_hostname, redis_port);
-		pool.getResource().hset("db", "" + db.getName(), dbs);
-		LOG.info("-----tianlong-----create database " + db.getName() + " success!");
+		Jedis jedis = redisUtil.getJedis();
+		int err = 0;
+		try {
+			String dbs = JSON.toJSONString(db);
+			jedis.hset("db", "" + db.getName(), dbs);
+			LOG.info("-----tianlong-----create database " + db.getName() + " success!");
+		} catch (JedisException e) {
+			err = -1;
+			throw e;
+		} finally {
+			if (err < 0) {
+				RedisUtil.putBrokenInstance(jedis);
+			} else {
+				RedisUtil.putInstance(jedis);
+			}
+		}
+		
 	}
 
 	@Override
 	public Database getDatabase(String name) throws NoSuchObjectException {
 		// TODO Auto-generated method stub
-		JedisPoolConfig config = new JedisPoolConfig();
-		JedisPool pool = new JedisPool(redis_hostname, redis_port);
-		String dbs = pool.getResource().hget("db", name);
-		// 要把String的JSON转换为Database
-		Database db = JSON.parseObject(dbs, Database.class);
+		Jedis jedis = redisUtil.getJedis();
+		Database db = null;
+		int err = 0;
+		try {
+			String dbs = jedis.hget("db", name);
+			db = JSON.parseObject(dbs, Database.class);
+		} catch (JedisException e) {
+			err = -1;
+			throw e;
+		} finally {
+			if (err < 0) {
+				RedisUtil.putBrokenInstance(jedis);
+			} else {
+				RedisUtil.putInstance(jedis);
+			}
+		}
 		return db;
 	}
 
@@ -213,12 +235,23 @@ public class NewObjectStore implements RawStore, Configurable{
 	@Override
 	public List<String> getAllDatabases() throws MetaException {
 		// TODO Auto-generated method stub
-		JedisPoolConfig config = new JedisPoolConfig();
-		JedisPool pool = new JedisPool(redis_hostname, redis_port);
-		Map<String, String> maps = pool.getResource().hgetAll("db");
+		Jedis jedis = redisUtil.getJedis();
 		List<String> dbs = new ArrayList<>();
-		for (Entry<String, String> entry : maps.entrySet()) {
-			dbs.add(entry.getKey());
+		int err = 0;
+		try {
+			Map<String, String> maps = jedis.hgetAll("db");
+			for (Entry<String, String> entry : maps.entrySet()) {
+				dbs.add(entry.getKey());
+			}
+		} catch (JedisException e) {
+			err = -1;
+			throw e;
+		} finally {
+			if (err < 0) {
+				RedisUtil.putBrokenInstance(jedis);
+			} else {
+				RedisUtil.putInstance(jedis);
+			}
 		}
 		return dbs;
 	}
@@ -245,10 +278,25 @@ public class NewObjectStore implements RawStore, Configurable{
 	public void createTable(Table tbl) throws InvalidObjectException, MetaException {
 		// TODO Auto-generated method stub
 		String tbls = JSON.toJSONString(tbl);
-		JedisPoolConfig config = new JedisPoolConfig();
-		JedisPool pool = new JedisPool(redis_hostname, redis_port);
-		pool.getResource().hset("table", "" + tbl.getDbName() + "." + tbl.getTableName(), tbls);
-		LOG.info("-----tianlong-----create table " + tbl.getTableName() + " success!");
+		int err = 0;
+		Jedis jedis = redisUtil.getJedis();
+		try {
+			jedis.hset("table", "" + tbl.getDbName() + "." + tbl.getTableName(), tbls);
+			LOG.info("-----tianlong-----create table " + tbl.getTableName() + " success!");
+		} catch (JedisException e) {
+			// TODO: handle exception
+			err = -1;
+			throw e;
+		} finally {
+			if (err < 0) {
+				LOG.info("-----tianlong-----before put broken instance!");
+				RedisUtil.putBrokenInstance(jedis);
+			} else {
+				LOG.info("-----tianlong-----before put instance!");
+				RedisUtil.putInstance(jedis);
+			}
+		}
+		
 	}
 
 	@Override
@@ -261,10 +309,22 @@ public class NewObjectStore implements RawStore, Configurable{
 	@Override
 	public Table getTable(String dbName, String tableName) throws MetaException {
 		// TODO Auto-generated method stub
-		JedisPoolConfig config = new JedisPoolConfig();
-		JedisPool pool = new JedisPool(redis_hostname, redis_port);
-		String tbls = pool.getResource().hget("table", dbName+"."+tableName);
-		Table table = JSON.parseObject(tbls, Table.class);
+		Jedis jedis = redisUtil.getJedis();
+		Table table = null;
+		int err = 0;
+		try {
+			String tbls = jedis.hget("table", dbName+"."+tableName);
+			table = JSON.parseObject(tbls, Table.class);
+		} catch (JedisException e) {
+			err = -1;
+			throw e;
+		} finally {
+			if (err < 0) {
+				RedisUtil.putBrokenInstance(jedis);
+			} else {
+				RedisUtil.putInstance(jedis);
+			}
+		}
 		return table;
 	}
 
@@ -325,12 +385,23 @@ public class NewObjectStore implements RawStore, Configurable{
 	@Override
 	public List<String> getTables(String dbName, String pattern) throws MetaException {
 		// TODO Auto-generated method stub
-		JedisPoolConfig config = new JedisPoolConfig();
-		JedisPool pool = new JedisPool(this.redis_hostname, this.redis_port);
-		Map<String, String> maps = pool.getResource().hgetAll("table");
+		Jedis jedis = redisUtil.getJedis();
 		List<String> tables = new ArrayList<>();
-		for (Entry<String, String> entry : maps.entrySet()) {
-			tables.add(entry.getKey());
+		int err = 0;
+		try {
+			Map<String, String> maps = jedis.hgetAll("table");
+			for (Entry<String, String> entry : maps.entrySet()) {
+				tables.add(entry.getKey());
+			}
+		} catch (JedisException e) {
+			err = -1;
+			throw e;
+		} finally {
+			if (err < 0) {
+				RedisUtil.putBrokenInstance(jedis);
+			} else {
+				RedisUtil.putInstance(jedis);
+			}
 		}
 		return tables;
 	}

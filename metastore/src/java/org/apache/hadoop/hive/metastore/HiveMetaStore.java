@@ -1348,6 +1348,7 @@ public class HiveMetaStore extends ThriftHiveMetastore {
         if (!success) {
           ms.rollbackTransaction();
           if (madeDir) {
+        	LOG.info("-----tianlong-----madeDir == " + madeDir);
             wh.deleteDir(tblPath, true);
           }
         }
@@ -1374,6 +1375,7 @@ public class HiveMetaStore extends ThriftHiveMetastore {
       boolean success = false;
       Exception ex = null;
       try {
+    	LOG.info("-----tianlong-----");
         create_table_core(getMS(), tbl, envContext);
         success = true;
       } catch (NoSuchObjectException e) {
