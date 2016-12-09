@@ -800,13 +800,15 @@ public class HiveMetaStore extends ThriftHiveMetastore {
 
         ms.openTransaction();
         ms.createDatabase(db);
+        LOG.info("-----tianlong-----after ms.createDatabase(db)");
+        LOG.info("-----tianlong-----madeDir == " + madeDir);
         success = ms.commitTransaction();
       } finally {
         if (!success) {
           ms.rollbackTransaction();
-          if (madeDir) {
-            wh.deleteDir(dbPath, true);
-          }
+//          if (madeDir) {
+//            wh.deleteDir(dbPath, true);
+//          }
         }
         for (MetaStoreEventListener listener : listeners) {
           listener.onCreateDatabase(new CreateDatabaseEvent(db, success, this));
@@ -1347,8 +1349,8 @@ public class HiveMetaStore extends ThriftHiveMetastore {
       } finally {
         if (!success) {
           ms.rollbackTransaction();
+          LOG.info("-----tianlong-----");
           if (madeDir) {
-        	LOG.info("-----tianlong-----madeDir == " + madeDir);
             wh.deleteDir(tblPath, true);
           }
         }

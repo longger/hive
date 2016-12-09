@@ -31,16 +31,8 @@ public class RedisUtil {
 		return null;
 	}
 	
-	public synchronized static Jedis putInstance(Jedis j) {
-		if (j == null) return null;
-		jedisPool.returnResource(j);
-		return null;
-	}
-	
-	public synchronized static Jedis putBrokenInstance(Jedis j) {
-		if (j == null) return null;
-		jedisPool.returnBrokenResource(j);
-		return null;
+	public void destroy() {
+		jedisPool.destroy();
 	}
 	
 	

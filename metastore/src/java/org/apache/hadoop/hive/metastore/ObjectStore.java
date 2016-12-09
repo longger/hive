@@ -316,6 +316,7 @@ public class ObjectStore implements RawStore, Configurable {
   @SuppressWarnings("nls")
   private void initialize(Properties dsProps) {
     LOG.info("ObjectStore, initialize called");
+    LOG.info("-----tianlong-----initial oldobjectstore the first time！");
     prop = dsProps;
     pm = getPersistenceManager();
     isInitialized = pm != null;
@@ -438,6 +439,7 @@ public class ObjectStore implements RawStore, Configurable {
   @Override
   public void shutdown() {
     if (pm != null) {
+      LOG.info("-----tianlong-----shut down");
       LOG.debug("RawStore: " + this + ", with PersistenceManager: " + pm +
           " will be shutdown");
       pm.close();
