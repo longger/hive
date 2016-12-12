@@ -32,6 +32,7 @@ public class RedisUtil {
 	}
 	
 	public void destroy() {
+		if (jedisPool == null) return;
 		jedisPool.destroy();
 	}
 	
