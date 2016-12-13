@@ -7,9 +7,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.Map.Entry;
-
-import javax.jdo.PersistenceManagerFactory;
 
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
@@ -60,18 +59,15 @@ public class NewObjectStore implements RawStore, Configurable{
 	private static final Logger LOG = LoggerFactory.getLogger(NewObjectStore.class.getName());
 	public static boolean initialized = false;
 	private static Properties prop = null;
-	private static PersistenceManagerFactory pmf = null;
 	
 	private static int count = 0; 
 	
 	private Configuration hiveConf;
 	public String redis_hostname;
 	public int redis_port;
-//	private static Lock pmfPropLock = new ReentrantLock();
 	private RedisUtil redisUtil = new RedisUtil();
 	private Jedis jedis = null;
 	
-	// 检查配置参数
 	public void initial(Properties dsProps) {
 		if (initialized == false) {
 			LOG.info("-----tianlong-----initial newobjectstore the first time！");
@@ -90,19 +86,16 @@ public class NewObjectStore implements RawStore, Configurable{
 	@Override
 	public void setConf(Configuration conf) {
 		// TODO Auto-generated method stub
-		//pmfPropLock.lock();
 		initialized = false;
 		hiveConf = conf;
 		Properties propsFromConf = getDataSourceProps(conf);
 		boolean propsChanged = !propsFromConf.equals(prop);
 		
 		if (propsChanged) {
-			pmf = null;
 			prop = null;
 		}
-		initial(propsFromConf);
 		count ++;
-		//pmfPropLock.unlock();
+		initial(propsFromConf);
 	}
 	
 	private static Properties getDataSourceProps(Configuration conf) {
@@ -152,7 +145,6 @@ public class NewObjectStore implements RawStore, Configurable{
 		// TODO Auto-generated method stub
 		LOG.info("-----tianlong-----shutdown");
 		jedis.close();
-		redisUtil.destroy();
 	}
 
 	@Override
@@ -170,7 +162,6 @@ public class NewObjectStore implements RawStore, Configurable{
 	@Override
 	public void rollbackTransaction() {
 		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
@@ -178,7 +169,6 @@ public class NewObjectStore implements RawStore, Configurable{
 		// TODO Auto-generated method stub
 		String dbs = JSON.toJSONString(db);
 		jedis.hset("db", "" + db.getName(), dbs);
-		LOG.info("-----tianlong-----create database " + db.getName() + " success!");
 	}
 
 	@Override
@@ -187,7 +177,6 @@ public class NewObjectStore implements RawStore, Configurable{
 		Database db = null;
 		String dbs = jedis.hget("db", name);
 		db = JSON.parseObject(dbs, Database.class);
-		LOG.info("-----tianlong-----get database " + name + " success!");
 		return db;
 	}
 
@@ -243,7 +232,6 @@ public class NewObjectStore implements RawStore, Configurable{
 		// TODO Auto-generated method stub
 		String tbls = JSON.toJSONString(tbl);
 		jedis.hset("table", "" + tbl.getDbName() + "." + tbl.getTableName(), tbls);
-		LOG.info("-----tianlong-----create table " + tbl.getTableName() + " success!");
 	}
 
 	@Override
@@ -259,7 +247,6 @@ public class NewObjectStore implements RawStore, Configurable{
 		Table table = null;
 		String tbls = jedis.hget("table", dbName+"."+tableName);
 		table = JSON.parseObject(tbls, Table.class);
-		LOG.info("-----tianlong-----get table " + dbName + "." + tableName + " success!");
 		return table;
 	}
 
@@ -321,11 +308,13 @@ public class NewObjectStore implements RawStore, Configurable{
 	public List<String> getTables(String dbName, String pattern) throws MetaException {
 		// TODO Auto-generated method stub
 		List<String> tables = new ArrayList<>();
-		Map<String, String> maps = jedis.hgetAll("table");
-		for (Entry<String, String> entry : maps.entrySet()) {
-			tables.add(entry.getKey());
+		// FIXME: Java heap space
+		// Only keys, or use hset instead of hash
+		// hset when create table add keys to hset, maybe there is no difference between hset and hash
+		Set<String> fields = jedis.hkeys("table");
+		for (String field : fields) {
+			tables.add(field);
 		}
-		LOG.info("-----tianlong-----get tables " + dbName + " success!");
 		return tables;
 	}
 
