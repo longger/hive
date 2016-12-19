@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.Map.Entry;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
@@ -67,6 +69,7 @@ public class NewObjectStore implements RawStore, Configurable{
 	public int redis_port;
 	private RedisUtil redisUtil = new RedisUtil();
 	private Jedis jedis = null;
+	private Lock lock = new ReentrantLock();
 	
 	public void initial(Properties dsProps) {
 		if (initialized == false) {
@@ -86,16 +89,24 @@ public class NewObjectStore implements RawStore, Configurable{
 	@Override
 	public void setConf(Configuration conf) {
 		// TODO Auto-generated method stub
-		initialized = false;
-		hiveConf = conf;
-		Properties propsFromConf = getDataSourceProps(conf);
-		boolean propsChanged = !propsFromConf.equals(prop);
-		
-		if (propsChanged) {
-			prop = null;
+		lock.lock();
+		try {
+			initialized = false;
+			hiveConf = conf;
+			Properties propsFromConf = getDataSourceProps(conf);
+			boolean propsChanged = !propsFromConf.equals(prop);
+			
+			if (propsChanged) {
+				prop = null;
+			}
+			count ++;
+			initial(propsFromConf);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			lock.unlock();	
 		}
-		count ++;
-		initial(propsFromConf);
 	}
 	
 	private static Properties getDataSourceProps(Configuration conf) {
