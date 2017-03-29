@@ -23,7 +23,7 @@ public class RedisUtil {
 		jedisPoolConfig.setMaxTotal(2000);
 		jedisPoolConfig.setBlockWhenExhausted(false);
 		
-		sentinels.add("192.168.11.94:26380");
+		//sentinels.add("192.168.11.94:26380");
 		sentinels.add("192.168.11.95:26380");
 		sentinels.add("192.168.11.97:26380");
 	}

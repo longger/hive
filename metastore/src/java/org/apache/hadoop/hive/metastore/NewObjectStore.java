@@ -72,7 +72,7 @@ public class NewObjectStore implements RawStore, Configurable{
 	private Lock lock = new ReentrantLock();
 	
 	public void initial(Properties dsProps) {
-		if (initialized == false) {
+		//if (initialized == false) {
 			LOG.info("-----tianlong-----initial newobjectstore the first time！");
 			LOG.info("-----tianlong-----count == " + count);
 			String redis_address = HiveConf.getVar(getConf(), ConfVars.REDIS_ADDRESS);
@@ -83,7 +83,7 @@ public class NewObjectStore implements RawStore, Configurable{
 			initialized = true;
 			LOG.info("-----tianlong-----initial success!");
 			jedis = redisUtil.getJedis();
-		}
+		//}
 	}
 
 	@Override
@@ -249,7 +249,8 @@ public class NewObjectStore implements RawStore, Configurable{
 	public boolean dropTable(String dbName, String tableName)
 			throws MetaException, NoSuchObjectException, InvalidObjectException, InvalidInputException {
 		// TODO Auto-generated method stub
-		return false;
+		jedis.hdel("table", dbName + "." + tableName);
+		return true;
 	}
 
 	@Override
@@ -323,8 +324,12 @@ public class NewObjectStore implements RawStore, Configurable{
 		// Only keys, or use hset instead of hash
 		// hset when create table add keys to hset, maybe there is no difference between hset and hash
 		Set<String> fields = jedis.hkeys("table");
+		String[] strs;
 		for (String field : fields) {
-			tables.add(field);
+			strs = field.split("\\.");
+			if (strs[0].equalsIgnoreCase(dbName)) {
+				tables.add(strs[1]);
+			}
 		}
 		return tables;
 	}
@@ -346,7 +351,16 @@ public class NewObjectStore implements RawStore, Configurable{
 	@Override
 	public List<String> getAllTables(String dbName) throws MetaException {
 		// TODO Auto-generated method stub
-		return null;
+		List<String> tables = new ArrayList<>();
+		Set<String> fields = jedis.hkeys("table");
+		String[] strs;
+		for (String field : fields) {
+			strs = field.split("\\.");
+			if (strs[0].equalsIgnoreCase(dbName)) {
+				tables.add(strs[1]);
+			}
+		}
+		return tables;
 	}
 
 	@Override
